@@ -4,8 +4,9 @@ use hickory_resolver::{lookup_ip::LookupIpIntoIter, system_conf, TokioAsyncResol
 use once_cell::sync::OnceCell;
 
 use std::io;
-use std::net::SocketAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::sync::Arc;
+use hickory_resolver::config::{NameServerConfigGroup, ResolverConfig, ResolverOpts};
 
 use super::{Addrs, Name, Resolve, Resolving};
 
@@ -48,11 +49,29 @@ impl Iterator for SocketAddrs {
 /// Create a new resolver with the default configuration,
 /// which reads from `/etc/resolve.conf`.
 fn new_resolver() -> io::Result<TokioAsyncResolver> {
-    let (config, opts) = system_conf::read_system_conf().map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("error reading DNS system conf: {e}"),
-        )
-    })?;
+    // let (config, opts) = system_conf::read_system_conf().map_err(|e| {
+    //     io::Error::new(
+    //         io::ErrorKind::Other,
+    //         format!("error reading DNS system conf: {e}"),
+    //     )
+    // })?;
+
+    // 使用阿里 dns 服务器
+    let config = ResolverConfig::from_parts(
+        None,
+        vec![],
+        NameServerConfigGroup::from_ips_clear(ALIBABA_IPS, 53, true),
+    );
+    // 添加阿里 dns 服务器
+    let mut opts = ResolverOpts::default();
+    opts.use_hosts_file = false;
+    opts.num_concurrent_reqs = 10;
     Ok(TokioAsyncResolver::tokio(config, opts))
 }
+
+const ALIBABA_IPS: &[IpAddr] = &[
+    IpAddr::V4(Ipv4Addr::new(223, 5, 5, 5)),
+    IpAddr::V4(Ipv4Addr::new(223, 6, 6, 6)),
+    IpAddr::V6(Ipv6Addr::new(0x2400, 0x3200, 0, 0, 0, 0, 0, 1)),
+    IpAddr::V6(Ipv6Addr::new(0x2400, 0x3200, 0xbaba, 0, 0, 0, 0, 1)),
+];
