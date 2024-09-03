@@ -57,11 +57,13 @@ fn new_resolver() -> io::Result<TokioAsyncResolver> {
     // })?;
 
     // 使用阿里 dns 服务器
-    let config = ResolverConfig::from_parts(
-        None,
-        vec![],
-        NameServerConfigGroup::from_ips_clear(ALIBABA_IPS, 53, true),
-    );
+    // let config = ResolverConfig::from_parts(
+    //     None,
+    //     vec![],
+    //     NameServerConfigGroup::from_ips_clear(ALIBABA_IPS, 53, true),
+    // );
+    // 使用 cloudflare dns 服务器
+    let config = ResolverConfig::cloudflare();
     // 添加阿里 dns 服务器
     let mut opts = ResolverOpts::default();
     opts.use_hosts_file = false;
